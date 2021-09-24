@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS staging_events(
     sessionId INTEGER,
     song VARCHAR,
     status INTEGER,
-    ts BIGINT,
+    ts TIMESTAMP,
     userAgent VARCHAR,
     userId INTEGER);
 
