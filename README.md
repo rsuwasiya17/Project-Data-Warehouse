@@ -81,3 +81,20 @@ The above mentioned tables can be interpreted using below Entity Relationship Di
 - `dwh.cfg`
 
    Contains Redshift database and IAM roleinfo
+   
+## **Analytical Queries Examples**
+
+- `Top 5 songs played:`
+
+SELECT s.title, count(sp.songplay_id) play_count
+FROM songplays sp, songs s
+WHERE sp.song_id = s.song_id
+GROUP BY s.title
+ORDER BY play_count DESC
+LIMIT 5;
+
+- `Count of Free and Paid users:`
+
+SELECT u.level, count(u.user_id) user_count
+FROM users u
+GROUP BY u.level;
