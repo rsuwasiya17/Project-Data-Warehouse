@@ -73,3 +73,7 @@ The above mentioned tables can be interpreted using below Entity Relationship Di
 - `sql_queries.py`
 
   Used for defining the SQL statements, which will be imported into the "create_tables.py" and "etl.py" files.
+
+- `Redshift cluster creation.ipynb`
+
+  Steps for creating and deleting Redshift Cluster using the AWS python SDK.
