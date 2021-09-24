@@ -2,11 +2,12 @@
 
 ## Table of contents
 
-* [Project Summary](#Project Summary)
-* [Project Description](#Project Description)
-* [Project Datasets](#Project Datasets)
-* [Schema for Song Play Analysis](#Schema for Song Play Analysis)
+* [Project Summary](#Project-Summary)
+* [Project Description](#Project-Description)
+* [Project Datasets](#Project-Datasets)
+* [Schema for Song Play Analysis](#Schema-for-Song-Play-Analysis)
 * [Files](#Files)
+* 
 # Project Summary
 The Project involves creation of a database schema and ETL pipeline for the Sparkify.
 Sparkify is a music streaming startup which has grown their user base and song database and want to move their processes and data onto the cloud. Their data resides in **S3, in a directory of JSON logs** on user activity on the app, as well as a **directory with JSON metadata** on the songs in their app.
