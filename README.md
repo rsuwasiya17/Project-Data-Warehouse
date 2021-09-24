@@ -7,6 +7,7 @@
 * [Project Datasets](#Project-Datasets)
 * [Schema for Song Play Analysis](#Schema-for-Song-Play-Analysis)
 * [Files](#Files)
+* [Analytical Queries Examples](#Analytical-Queries-Examples)
 
 # Project Summary
 The Project involves creation of a database schema and ETL pipeline for the Sparkify.
@@ -84,7 +85,7 @@ The above mentioned tables can be interpreted using below Entity Relationship Di
    
 ## **Analytical Queries Examples**
 
-- `Top 5 songs played:`
+- `**Top 5 songs played:**`
 
 ```
 SELECT s.title, count(sp.songplay_id) play_count
@@ -95,7 +96,7 @@ ORDER BY play_count DESC
 LIMIT 5;
 ```
 
-- `Count of Free and Paid users:`
+- `**Count of Free and Paid users:**`
 
 ```
 SELECT u.level, count(u.user_id) user_count
