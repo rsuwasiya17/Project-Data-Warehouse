@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS staging_songs(
 songplay_table_create = ("""
 CREATE TABLE IF NOT EXISTS songplays(
     songplay_id BIGINT IDENTITY(0,1) PRIMARY KEY,
-    start_time BIGINT NOT NULL, 
+    start_time TIMESTAMP NOT NULL, 
     user_id INTEGER NOT NULL,
     level VARCHAR,
     song_id VARCHAR,
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS artists(
 
 time_table_create = ("""
 CREATE TABLE IF NOT EXISTS time(
-    start_time BIGINT PRIMARY KEY, 
+    start_time TIMESTAMP PRIMARY KEY, 
     hour INTEGER, 
     day INTEGER, 
     week INTEGER, 
@@ -112,36 +112,56 @@ staging_events_copy = ("""
     COPY staging_events
     FROM {}
     iam_role {}
-    json {};
+    FORMAT AS json {}
+    REGION 'us-west-2';
 """).format(config['S3']['LOG_DATA'],config['IAM_ROLE']['ARN'],config['S3']['LOG_JSONPATH'])
 
 staging_songs_copy = ("""
     COPY staging_songs
     FROM {}
     iam_role {}
-    json 'auto' truncatecolumns;
+    FORMAT AS json 'auto'
+    REGION 'us-west-2';
 """).format(config['S3']['SONG_DATA'],config['IAM_ROLE']['ARN'])
 
 # FINAL TABLES
 
 songplay_table_insert = ("""
 INSERT INTO songplays
-SELECT se.ts AS start_time, 
-        se.userId AS user_id,
-        se.level AS level, 
-        ss.song_id AS song_id,
-        ss.artist_id AS artist_id, 
-        se.sessionId AS session_id, 
-        se.location AS location, 
-        se.userAgent AS user_agent
+(start_time,user_id, level, song_id, artist_id, session_id, location, user_agent)
+SELECT (TIMESTAMP 'epoch' + se.ts/1000*INTERVAL '1 second') AS start_time,
+        se.userId,
+        se.level, 
+        ss.song_id,
+        ss.artist_id, 
+        se.sessionId, 
+        se.location, 
+        se.userAgent
 FROM staging_events se
 JOIN staging_songs ss
 ON (se.artist = ss.artist_name) 
 AND (se.song = ss.title)
 AND (se.length = ss.duration)
-WHERE se.page = 'NextSong';
-                        
+WHERE se.page = 'NextSong';                       
 """)
+
+# songplay_table_insert = ("""
+# INSERT INTO songplays
+# SELECT se.ts AS start_time, 
+#         se.userId AS user_id,
+#         se.level AS level, 
+#         ss.song_id AS song_id,
+#         ss.artist_id AS artist_id, 
+#         se.sessionId AS session_id, 
+#         se.location AS location, 
+#         se.userAgent AS user_agent
+# FROM staging_events se
+# JOIN staging_songs ss
+# ON (se.artist = ss.artist_name) 
+# AND (se.song = ss.title)
+# AND (se.length = ss.duration)
+# WHERE se.page = 'NextSong';                       
+# """)
 
 user_table_insert = ("""
 INSERT INTO users 
@@ -171,14 +191,16 @@ FROM staging_songs ss;
 """)
 
 time_table_insert = ("""
-INSERT INTO time (start_time, hour, day, week, month, year, weekday)
-SELECT start_time,
-        EXTRACT(hour from start_time) AS hour,
-        EXTRACT(day from start_time) AS day,
-        EXTRACT(week from start_time) AS week,
-        EXTRACT(month from start_time) AS month,
+INSERT INTO time
+SELECT DISTINCT
+        TIMESTAMP 'epoch' + (ts/1000) * INTERVAL '1 second' as start_time,
+        EXTRACT(HOUR FROM start_time) AS hour,
+        EXTRACT(DAY FROM start_time) AS day,
+        EXTRACT(WEEKS FROM start_time) AS week,
+        EXTRACT(MONTH FROM start_time) AS month,
+        EXTRACT(YEAR FROM start_time) AS year,
         EXTRACT(dayofweek from start_time) AS weekday
-FROM songplays;
+    FROM staging_events;
 """)
 
 # QUERY LISTS
