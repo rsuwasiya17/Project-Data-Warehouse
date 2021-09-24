@@ -1,4 +1,4 @@
-# **Implementing Data Warehouse in Redshift**
+# **Implementing Data Warehouse on Redshift**
 
 ## Table of contents
 
