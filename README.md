@@ -77,3 +77,7 @@ The above mentioned tables can be interpreted using below Entity Relationship Di
 - `Redshift cluster creation.ipynb`
 
   Steps for creating and deleting Redshift Cluster using the AWS python SDK.
+  
+- `dwh.cfg`
+
+   Contains Redshift database and IAM roleinfo
