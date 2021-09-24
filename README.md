@@ -62,14 +62,14 @@ The above mentioned tables can be interpreted using below Entity Relationship Di
 ![ERD](images/erd.png)
 
 ## **Files**
-- create_tables.py
+- `create_tables.py`
 
   Creates the fact and dimension tables for the star schema in Redshift.
 
-- etl.py
+- `etl.py`
 
   Loads data from S3 into staging tables on Redshift and then process that data into the analytics tables on Redshift.
 
-- sql_queries.py
+- `sql_queries.py`
 
   Used for defining the SQL statements, which will be imported into the "create_tables.py" and "etl.py" files.
