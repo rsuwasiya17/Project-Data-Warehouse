@@ -59,12 +59,12 @@ CREATE TABLE IF NOT EXISTS songplays(
     songplay_id BIGINT IDENTITY(0,1) PRIMARY KEY,
     start_time BIGINT NOT NULL, 
     user_id INTEGER NOT NULL,
-    level VARCHAR NOT NULL,
+    level VARCHAR,
     song_id VARCHAR,
     artist_id VARCHAR NOT NULL,
     session_id INTEGER NOT NULL,
-    location VARCHAR NOT NULL,
-    user_agent VARCHAR NOT NULL);
+    location VARCHAR,
+    user_agent VARCHAR);
 """)
 
 user_table_create = ("""
