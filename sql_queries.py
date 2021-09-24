@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS staging_events(
     location VARCHAR,
     method VARCHAR,
     page VARCHAR,
-    registration VARCHAR,
+    registration NUMERIC,
     sessionId INTEGER,
     song VARCHAR,
     status INTEGER,
@@ -56,15 +56,15 @@ CREATE TABLE IF NOT EXISTS staging_songs(
 
 songplay_table_create = ("""
 CREATE TABLE IF NOT EXISTS songplays(
-    songplay_id INTEGER IDENTITY(0,1) PRIMARY KEY,
+    songplay_id BIGINT IDENTITY(0,1) PRIMARY KEY,
     start_time BIGINT NOT NULL, 
     user_id INTEGER NOT NULL,
-    level VARCHAR,
+    level VARCHAR NOT NULL,
     song_id VARCHAR,
-    artist_id VARCHAR,
+    artist_id VARCHAR NOT NULL,
     session_id INTEGER NOT NULL,
-    location VARCHAR,
-    user_agent VARCHAR);
+    location VARCHAR NOT NULL,
+    user_agent VARCHAR NOT NULL);
 """)
 
 user_table_create = ("""
