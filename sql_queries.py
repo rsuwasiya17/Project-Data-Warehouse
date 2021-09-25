@@ -15,25 +15,27 @@ artist_table_drop = "DROP TABLE IF EXISTS artists;"
 time_table_drop = "DROP TABLE IF EXISTS time;"
 
 # CREATE TABLES
-
+"""
+Song Data and Log Data files are stored on AWS S3 which will be copied to staging_events table using COPY function, Data from this table is transformed and stored in other tables for analysis purpose
+"""
 staging_events_table_create= ("""
 CREATE TABLE IF NOT EXISTS staging_events(
     artist VARCHAR,
     auth VARCHAR,
-    firstName VARCHAR,
-    gender VARCHAR,
+    firstName VARCHAR(50),
+    gender CHAR(2),
     iteminSession INTEGER,
-    lastName VARCHAR,
-    length NUMERIC,
-    level VARCHAR,
-    location VARCHAR,
+    lastName VARCHAR(50),
+    length DECIMAL,
+    level VARCHAR NOT NULL,
+    location VARCHAR, 
     method VARCHAR,
     page VARCHAR,
-    registration NUMERIC,
-    sessionId INTEGER,
+    registration DECIMAL,
+    sessionId INTEGER NOT NULL,
     song VARCHAR,
     status INTEGER,
-    ts TIMESTAMP,
+    ts BIGINT NOT NULL,
     userAgent VARCHAR,
     userId INTEGER);
 
@@ -42,58 +44,67 @@ CREATE TABLE IF NOT EXISTS staging_events(
 staging_songs_table_create = ("""
 CREATE TABLE IF NOT EXISTS staging_songs(
     num_songs INTEGER,
-    artist_id VARCHAR,
-    artist_latitude NUMERIC,
-    artist_longitude NUMERIC,
+    artist_id VARCHAR NOT NULL,
+    artist_latitude DECIMAL,
+    artist_longitude DECIMAL,
     artist_location VARCHAR,
     artist_name VARCHAR,
-    song_id VARCHAR,
-    title VARCHAR,
-    duration NUMERIC,
+    song_id VARCHAR NOT NULL,
+    title VARCHAR NOT NULL,
+    duration DECIMAL NOT NULL,
     year INTEGER);
 
 """)
+
+#songplays is the Fact table in this Star schema
 
 songplay_table_create = ("""
 CREATE TABLE IF NOT EXISTS songplays(
     songplay_id BIGINT IDENTITY(0,1) PRIMARY KEY,
     start_time TIMESTAMP NOT NULL, 
-    user_id INTEGER NOT NULL,
-    level VARCHAR,
+    user_id INTEGER,
+    level VARCHAR NOT NULL,
     song_id VARCHAR,
-    artist_id VARCHAR NOT NULL,
+    artist_id VARCHAR,
     session_id INTEGER NOT NULL,
     location VARCHAR,
-    user_agent VARCHAR);
+    user_agent VARCHAR NOT NULL);
 """)
+
+#users is the dimension table
 
 user_table_create = ("""
 CREATE TABLE IF NOT EXISTS users(
     user_id INTEGER PRIMARY KEY, 
-    first_name VARCHAR, 
-    last_name VARCHAR, 
-    gender VARCHAR, 
+    first_name VARCHAR(50), 
+    last_name VARCHAR(50), 
+    gender CHAR(2), 
     level VARCHAR);
-
 """)
+
+#songs is the dimension table
 
 song_table_create = ("""
 CREATE TABLE IF NOT EXISTS songs(
-    song_id VARCHAR PRIMARY KEY, 
+    song_id VARCHAR PRIMARY KEY , 
     title VARCHAR, 
     artist_id VARCHAR, 
     year INTEGER,  
-    duration NUMERIC);
+    duration DECIMAL);
 """)
+
+#artists is the dimension table
 
 artist_table_create = ("""
 CREATE TABLE IF NOT EXISTS artists(
     artist_id VARCHAR PRIMARY KEY, 
     name VARCHAR, 
     location VARCHAR, 
-    lattitude NUMERIC, 
-    longitude NUMERIC);
+    lattitude DECIMAL, 
+    longitude DECIMAL);
 """)
+
+#time is the dimension table
 
 time_table_create = ("""
 CREATE TABLE IF NOT EXISTS time(
@@ -108,6 +119,10 @@ CREATE TABLE IF NOT EXISTS time(
 
 # STAGING TABLES
 
+"""
+Copying log data from S3 bucket,Files are in JSON format.
+Source data path, IAM Role ARN, and JSON path file details are sourced from config file using config parser
+"""
 staging_events_copy = ("""
     COPY staging_events
     FROM {}
@@ -116,6 +131,10 @@ staging_events_copy = ("""
     REGION 'us-west-2';
 """).format(config['S3']['LOG_DATA'],config['IAM_ROLE']['ARN'],config['S3']['LOG_JSONPATH'])
 
+"""
+Copying song data from S3 bucket,Files are in JSON format.
+Source data path, IAM Role ARN, and JSON path file details are sourced from config file using config parser
+"""
 staging_songs_copy = ("""
     COPY staging_songs
     FROM {}
@@ -129,7 +148,7 @@ staging_songs_copy = ("""
 songplay_table_insert = ("""
 INSERT INTO songplays
 (start_time,user_id, level, song_id, artist_id, session_id, location, user_agent)
-SELECT (TIMESTAMP 'epoch' + se.ts/1000*INTERVAL '1 second') AS start_time,
+SELECT DISTINCT (TIMESTAMP 'epoch' + se.ts/1000*INTERVAL '1 second') AS start_time,
         se.userId,
         se.level, 
         ss.song_id,
@@ -145,27 +164,9 @@ AND (se.length = ss.duration)
 WHERE se.page = 'NextSong';                       
 """)
 
-# songplay_table_insert = ("""
-# INSERT INTO songplays
-# SELECT se.ts AS start_time, 
-#         se.userId AS user_id,
-#         se.level AS level, 
-#         ss.song_id AS song_id,
-#         ss.artist_id AS artist_id, 
-#         se.sessionId AS session_id, 
-#         se.location AS location, 
-#         se.userAgent AS user_agent
-# FROM staging_events se
-# JOIN staging_songs ss
-# ON (se.artist = ss.artist_name) 
-# AND (se.song = ss.title)
-# AND (se.length = ss.duration)
-# WHERE se.page = 'NextSong';                       
-# """)
-
 user_table_insert = ("""
 INSERT INTO users 
-SELECT se.userId AS user_id, 
+SELECT DISTINCT se.userId AS user_id, 
         se.firstName AS first_name, 
         se.lastName AS last_name, 
         gender, 
@@ -176,19 +177,29 @@ WHERE se.page = 'NextSong';
 
 song_table_insert = ("""
 INSERT INTO songs 
-SELECT song_id, title, artist_id, year, duration
+SELECT DISTINCT song_id, title, artist_id, year, duration
 FROM staging_songs;
 """)
 
 artist_table_insert = ("""
 INSERT INTO artists 
-SELECT artist_id, 
+SELECT DISTINCT artist_id, 
         ss.artist_name AS name, 
         ss.artist_location AS location, 
         ss.artist_latitude AS latitude, 
         ss.artist_longitude AS longitude
 FROM staging_songs ss;
 """)
+
+"""
+Redshift don't have any pre-defined method to convert string to timestamp.
+Redshift timestamp epoch equals 1970-01-01 00:00:00.000000 ,
+Interval adds specified date, time, and day values to any date,
+ts represents timestamp from events (log) files which is stored in staging_events table as BIGINT,
+ts is in miliseconds hence it is divided by 1000 to convert to seconds and then multiplied 
+by "Interval '1 second'", resulting in the interval of ts seconds since epoch
+Result from interval calc is added to epoch which returns the proper Redshift Timestamp for ts
+"""
 
 time_table_insert = ("""
 INSERT INTO time
