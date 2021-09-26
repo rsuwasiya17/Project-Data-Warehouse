@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS staging_events(
     location VARCHAR, 
     method VARCHAR,
     page VARCHAR,
-    registration DECIMAL,
+    registration VARCHAR,
     sessionId INTEGER NOT NULL,
     song VARCHAR,
     status INTEGER,
